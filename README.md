@@ -62,6 +62,51 @@ user2, _ := nkeys.FromRawSeed(PrefixByteUser, rawSeed)
 
 ```
 
+## Key Rotation
+
+`KeyRing` verifies signatures from more than one key generation and retires old
+keys by time instead of requiring an all-at-once cutover.
+
+```go
+rotation := time.Now()
+retireOldKey := rotation.Add(30 * time.Minute)
+
+ring, err := nkeys.NewKeyRing(
+	// Keep the previous generation available while old clients migrate.
+	nkeys.KeyWindow{
+		PublicKey: oldPublicKey,
+		NotAfter:  retireOldKey,
+	},
+	// Start accepting the new generation at the same time.
+	nkeys.KeyWindow{
+		PublicKey: newPublicKey,
+		NotBefore: rotation,
+	},
+)
+if err != nil {
+	return err
+}
+
+// Uses the keys that are active at the current time.
+err = ring.Verify(payload, signature)
+
+// VerifyAt is available for deterministic tests and replay validation.
+err = ring.VerifyAt(payload, signature, rotation.Add(10*time.Minute))
+```
+
+Both time boundaries are inclusive. During the overlap both generations are
+accepted; after `NotAfter` the old key is rejected without another deployment.
+Only the current key should be left without an expiry.
+
+Size the overlap from the worst-case rollout and client reconnect time, not
+from the shortest hoped-for switch. Include clock-skew allowance and monitor old
+key use before the deadline. `NewKeyRingForPrefixes` additionally restricts all
+accepted keys to one or more roles.
+
+Every key in a ring goes through the same strict public-key validation as
+`FromPublicKey`. Malformed keys, invalid lengths, wrong roles, curve keys, and
+Ed25519 small-order points are rejected when the ring is created.
+
 ## License
 
 Unless otherwise noted, the NATS source files are distributed

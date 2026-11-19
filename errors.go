@@ -41,6 +41,8 @@ const (
 	ErrInvalidNKeyOperation     = nkeysError("nkeys: only curve key can seal/open")
 	ErrCannotOpen               = nkeysError("nkeys: cannot open no private curve key available")
 	ErrCannotSeal               = nkeysError("nkeys: cannot seal no private curve key available")
+	ErrNoVerificationKeys       = nkeysError("nkeys: no verification keys")
+	ErrInvalidKeyWindow         = nkeysError("nkeys: invalid key validity window")
 )
 
 type nkeysError string
