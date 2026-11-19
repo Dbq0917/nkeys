@@ -216,6 +216,25 @@ func IsValidPublicKey(src string) bool {
 	return err == nil
 }
 
+// IsValidPublicKeyForPrefixes will decode and verify that the string is a valid
+// encoded public key with one of the expected prefixes. If no prefixes are
+// supplied, any valid public key prefix is accepted.
+func IsValidPublicKeyForPrefixes(src string, expected ...PrefixByte) bool {
+	prefix, _, err := decodePublicKey(src)
+	if err != nil {
+		return false
+	}
+	if len(expected) == 0 {
+		return true
+	}
+	for _, want := range expected {
+		if prefix == want {
+			return true
+		}
+	}
+	return false
+}
+
 // Small-order Ed25519 encodings from libsodium 1.0.18's ge25519_has_small_order. The sign bit is
 // ignored when comparing, so these cover all eight points, including noncanonical aliases with y = p and p+1.
 // https://github.com/jedisct1/libsodium/blob/1.0.18/src/libsodium/crypto_core/ed25519/ref10/ed25519_ref10.c#L965-L1022
